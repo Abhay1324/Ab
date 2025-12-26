@@ -1,0 +1,230 @@
+// Prisma schema for Milk Subscription Platform
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Customer model
+model Customer {
+  id          String         @id @default(uuid())
+  phone       String         @unique
+  name        String
+  email       String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  addresses   Address[]
+  wallet      Wallet?
+  subscriptions Subscription[]
+
+  @@map("customers")
+}
+
+// Address model
+model Address {
+  id          String        @id @default(uuid())
+  customerId  String
+  line1       String
+  line2       String?
+  landmark    String?
+  city        String
+  state       String
+  pincode     String
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@map("addresses")
+}
+
+// Product model
+model Product {
+  id          String        @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  unit        String
+  isAvailable Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  subscriptionProducts SubscriptionProduct[]
+
+  @@map("products")
+}
+
+
+// Delivery Slot model
+model DeliverySlot {
+  id          String        @id @default(uuid())
+  startTime   String        // Format: "HH:mm"
+  endTime     String        // Format: "HH:mm"
+  label       String
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  subscriptions Subscription[]
+
+  @@map("delivery_slots")
+}
+
+// Area model
+model Area {
+  id          String        @id @default(uuid())
+  name        String
+  pincodes    String        // Comma-separated pincodes for SQLite compatibility
+  createdAt   DateTime      @default(now())
+  deliveryBoys DeliveryBoy[]
+
+  @@map("areas")
+}
+
+// Delivery Boy model
+model DeliveryBoy {
+  id          String        @id @default(uuid())
+  phone       String        @unique
+  name        String
+  password    String
+  areaId      String
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  area        Area          @relation(fields: [areaId], references: [id])
+  deliveries  Delivery[]
+
+  @@map("delivery_boys")
+}
+
+// Subscription model
+model Subscription {
+  id              String        @id @default(uuid())
+  customerId      String
+  addressId       String
+  deliverySlotId  String
+  frequency       String        // DAILY, ALTERNATE, WEEKLY
+  status          String        @default("ACTIVE") // ACTIVE, PAUSED, CANCELLED
+  startDate       DateTime
+  pauseStart      DateTime?
+  pauseEnd        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  customer        Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  address         Address       @relation(fields: [addressId], references: [id])
+  deliverySlot    DeliverySlot  @relation(fields: [deliverySlotId], references: [id])
+  products        SubscriptionProduct[]
+  deliveries      Delivery[]
+
+  @@map("subscriptions")
+}
+
+
+// Subscription Product (junction table)
+model SubscriptionProduct {
+  id              String        @id @default(uuid())
+  subscriptionId  String
+  productId       String
+  quantity        Int
+  priceAtTime     Float
+  subscription    Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id])
+
+  @@unique([subscriptionId, productId])
+  @@map("subscription_products")
+}
+
+// Wallet model
+model Wallet {
+  id                String        @id @default(uuid())
+  customerId        String        @unique
+  balance           Float         @default(0)
+  minimumThreshold  Float         @default(100)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  customer          Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+
+  @@map("wallets")
+}
+
+// Transaction model
+model Transaction {
+  id            String          @id @default(uuid())
+  walletId      String
+  type          String          // CREDIT, DEBIT
+  amount        Float
+  balanceAfter  Float
+  reason        String
+  metadata      String?         // JSON string for SQLite
+  createdAt     DateTime        @default(now())
+  wallet        Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+// Delivery model
+model Delivery {
+  id              String          @id @default(uuid())
+  subscriptionId  String
+  deliveryBoyId   String?
+  deliveryDate    DateTime
+  status          String          @default("PENDING") // PENDING, IN_PROGRESS, DELIVERED, FAILED
+  proofUrl        String?
+  proofType       String?
+  failureReason   String?
+  failureNotes    String?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  subscription    Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  deliveryBoy     DeliveryBoy?    @relation(fields: [deliveryBoyId], references: [id])
+
+  @@map("deliveries")
+}
+
+
+// Admin model
+model Admin {
+  id          String        @id @default(uuid())
+  email       String        @unique
+  password    String
+  name        String
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  auditLogs   AuditLog[]
+
+  @@map("admins")
+}
+
+// Audit Log model
+model AuditLog {
+  id          String        @id @default(uuid())
+  adminId     String
+  action      String
+  entityType  String
+  entityId    String
+  details     String?       // JSON string for SQLite
+  createdAt   DateTime      @default(now())
+  admin       Admin         @relation(fields: [adminId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// OTP model for authentication
+model OTP {
+  id          String        @id @default(uuid())
+  phone       String
+  code        String
+  attempts    Int           @default(0)
+  expiresAt   DateTime
+  blockedUntil DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@index([phone])
+  @@map("otps")
+}
