@@ -1,0 +1,39 @@
+// Error Codes
+export const AUTH_ERRORS = {
+  INVALID_PHONE: 'AUTH_001',
+  OTP_EXPIRED: 'AUTH_002',
+  INVALID_OTP: 'AUTH_003',
+  ACCOUNT_BLOCKED: 'AUTH_004',
+  SESSION_EXPIRED: 'AUTH_005',
+} as const;
+
+export const SUBSCRIPTION_ERRORS = {
+  NO_PRODUCTS: 'SUB_001',
+  INVALID_QUANTITY: 'SUB_002',
+  INVALID_SLOT: 'SUB_003',
+  INVALID_PAUSE_DATES: 'SUB_004',
+  NOT_FOUND: 'SUB_005',
+} as const;
+
+export const WALLET_ERRORS = {
+  INSUFFICIENT_BALANCE: 'WAL_001',
+  INVALID_AMOUNT: 'WAL_002',
+  PAYMENT_FAILED: 'WAL_003',
+  NOT_FOUND: 'WAL_004',
+} as const;
+
+export const DELIVERY_ERRORS = {
+  NOT_FOUND: 'DEL_001',
+  ALREADY_COMPLETED: 'DEL_002',
+  PROOF_REQUIRED: 'DEL_003',
+  REASON_REQUIRED: 'DEL_004',
+} as const;
+
+// Configuration Constants
+export const OTP_EXPIRY_MINUTES = 5;
+export const OTP_MAX_ATTEMPTS = 3;
+export const OTP_BLOCK_MINUTES = 15;
+export const JWT_ACCESS_EXPIRY = '15m';
+export const JWT_REFRESH_EXPIRY = '7d';
+export const MIN_WALLET_THRESHOLD = 100;
+export const MAX_PRODUCT_QUANTITY = 10;
